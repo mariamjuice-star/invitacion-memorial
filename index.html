@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --bg: #f4f2ee;
@@ -116,7 +117,19 @@
   .check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin-bottom: 12px; }
   .check input { width: 17px; height: 17px; accent-color: var(--brand); }
   .event-box { border-left: 3px solid var(--line); padding-left: 12px; margin-bottom: 6px; }
-  .event-box[hidden] { display: none; }
+  .event-box[hidden], .field[hidden] { display: none; }
+  input[type=date], input[type=time], select {
+    width: 100%; font: inherit; font-size: 14px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--field); color: var(--ink);
+  }
+  .rlist { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 4px; }
+  .rlist:empty { display: none; }
+  .ritem { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; font-size: 13px; }
+  .ritem + .ritem { border-top: 1px solid var(--line); }
+  .ritem b { display: block; font-weight: 600; }
+  .ritem span { color: var(--muted); font-size: 12px; }
+  .ritem a { flex: none; color: var(--brand); font-weight: 600; font-size: 12px; text-decoration: none; }
+  .rempty { padding: 10px 12px; font-size: 13px; color: var(--muted); }
 
   .actions { display: grid; gap: 8px; margin-top: 14px; }
   .btn {
@@ -219,6 +232,16 @@
     font: 400 calc(9.5px * var(--ts))/1.35 Montserrat, sans-serif;
     color: var(--c-muted); margin-top: 2px;
   }
+  .c-qr {
+    display: inline-flex; align-items: center; gap: calc(6px * var(--ts));
+    margin-top: calc(6px * var(--ts));
+    font: 600 calc(8px * var(--ts))/1.2 Montserrat, sans-serif;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--c-accent-text);
+  }
+  .c-qr img {
+    width: calc(44px * var(--ts)); height: calc(44px * var(--ts));
+    background: #fff; padding: 3px; border-radius: 4px; border: 1px solid var(--c-line);
+  }
   .c-note { font: italic 400 calc(13px * var(--ts))/1.3 "Cormorant Garamond", serif; max-width: 270px; }
   .c-contact {
     font: 500 calc(9px * var(--ts))/1.3 Montserrat, sans-serif;
@@ -247,7 +270,7 @@
 <body>
 <header>
   <h1>Invitación Memorial Digital</h1>
-  <p>Plantilla editable para móvil · Celebración de vida, velorio o misa · Descárgala y envíala por WhatsApp</p>
+  <p>Plantilla editable para móvil · Recordando una vida · Velatorio o misa · Descárgala y envíala por WhatsApp</p>
 </header>
 
 <main class="app">
@@ -306,10 +329,11 @@
     <div class="panel">
       <h2>Ceremonias</h2>
       <div class="event-box">
-        <div class="field"><label>Tipo de acto</label><input type="text" data-k="e1t" placeholder="Velorio, Misa, Ceremonia…"></div>
+        <div class="field"><label>Tipo de acto</label><input type="text" data-k="e1t" placeholder="Velatorio, Misa, Ceremonia…"></div>
         <div class="field"><label>Día y hora</label><input type="text" data-k="e1d"></div>
         <div class="field"><label>Lugar</label><input type="text" data-k="e1l"></div>
         <div class="field"><label>Dirección</label><input type="text" data-k="e1a"></div>
+        <div class="field"><label>Enlace de Google Maps <small>(opcional)</small></label><input type="text" data-k="e1m" placeholder="Pega aquí el enlace, o déjalo vacío para usar la dirección"></div>
       </div>
       <label class="check"><input type="checkbox" data-k="e2on"> Añadir un segundo acto</label>
       <div class="event-box" id="ev2box">
@@ -317,7 +341,10 @@
         <div class="field"><label>Día y hora</label><input type="text" data-k="e2d"></div>
         <div class="field"><label>Lugar</label><input type="text" data-k="e2l"></div>
         <div class="field"><label>Dirección</label><input type="text" data-k="e2a"></div>
+        <div class="field"><label>Enlace de Google Maps <small>(opcional)</small></label><input type="text" data-k="e2m" placeholder="Pega aquí el enlace, o déjalo vacío para usar la dirección"></div>
       </div>
+      <label class="check"><input type="checkbox" data-k="qr"> Mostrar código QR «Cómo llegar» en la invitación</label>
+      <p class="hint" style="text-align:left;margin:0">En Google Maps, busca el lugar y pulsa <b>Compartir → Copiar enlace</b>. Al compartir la invitación, el mensaje incluirá estos enlaces para que se puedan pulsar.</p>
     </div>
 
     <div class="panel">
@@ -329,6 +356,37 @@
         <div class="field"><label>Tamaño del texto</label><input type="range" data-k="ts" min="0.7" max="1.2" step="0.01"></div>
       </div>
       <p class="hint" style="text-align:left;margin:0">Si el texto no cabe, se reduce solo para que nada quede cortado.</p>
+    </div>
+
+    <div class="panel" id="reminders">
+      <h2>Recordatorios de misas</h2>
+      <p class="hint" style="text-align:left;margin:0 0 14px">Crea un calendario con la misa de la semana y las misas de aniversario. Al añadirlo al móvil, <b>cada misa avisa 7 días antes</b>, año tras año.</p>
+      <div class="row2">
+        <div class="field"><label>Fecha del fallecimiento</label><input type="date" data-k="rFall"></div>
+        <div class="field"><label>Hora de las misas</label><input type="time" data-k="rHora"></div>
+      </div>
+      <label class="check"><input type="checkbox" data-k="rSem"> Incluir la misa de la semana</label>
+      <div class="field" id="rSemBox">
+        <label>Fecha de la misa de la semana <small>(si la dejas vacía: 7 días después)</small></label>
+        <input type="date" data-k="rSemFecha">
+      </div>
+      <div class="row2">
+        <div class="field"><label>Misas de aniversario</label>
+          <select data-k="rAnios">
+            <option value="0">Ninguna</option><option value="1">1 año</option><option value="2">2 años</option>
+            <option value="3">3 años</option><option value="4">4 años</option><option value="5">5 años</option>
+            <option value="6">6 años</option><option value="7">7 años</option><option value="8">8 años</option>
+            <option value="9">9 años</option><option value="10">10 años</option>
+          </select>
+        </div>
+        <div class="field"><label>Lugar de las misas</label><input type="text" data-k="rLugar" id="rLugarInput"></div>
+      </div>
+      <div class="rlist" id="rList"></div>
+      <div class="actions">
+        <button class="btn" id="icsBtn">Descargar calendario</button>
+        <button class="btn secondary" id="icsShareBtn" hidden>Compartir calendario</button>
+      </div>
+      <p class="hint" style="text-align:left">Ábrelo en el móvil y pulsa <b>Añadir todo</b>. Puedes reenviarlo por WhatsApp a la familia para que cada persona reciba sus avisos. Con Google Calendar en Android, usa los enlaces <b>«+ Google»</b> de la lista y elige un aviso de 1 semana.</p>
     </div>
   </section>
 
@@ -344,6 +402,7 @@
     <div class="actions">
       <button class="btn" id="downloadBtn">Descargar imagen</button>
       <button class="btn secondary" id="shareBtn" hidden>Compartir</button>
+      <button class="btn secondary" id="copyBtn">Copiar mensaje con ubicaciones</button>
       <button class="btn secondary" id="resetBtn">Restablecer ejemplo</button>
     </div>
     <p class="hint">Imagen vertical 1080 × 1920 px, ideal para la pantalla del móvil.</p>
@@ -353,19 +412,20 @@
 <script>
 const DEFAULTS = {
   theme: "botanico", shape: "circle", zoom: 1, px: 0, py: 0, ns: 1, ts: 1,
-  script: "Celebrando",
+  script: "Recordando",
   sub: "la vida de",
   nombre: "Carlos Méndez Ruiz",
   fechas: "12 · 03 · 1958  —  04 · 10 · 2026",
   verso: "Lo que amamos con el corazón nunca se pierde.",
-  e1t: "Velorio", e1d: "Viernes 23 de octubre · 18:00 h", e1l: "Funeraria San José", e1a: "Av. de la Paz 145",
-  e2on: true,
+  e1t: "Velatorio", e1d: "Viernes 23 de octubre · 18:00 h", e1l: "Funeraria San José", e1a: "Av. de la Paz 145",
+  e2on: true, qr: true, e1m: "", e2m: "",
+  rFall: "2026-10-04", rHora: "19:00", rSem: true, rSemFecha: "", rAnios: 10, rLugar: "",
   e2t: "Misa", e2d: "Sábado 24 de octubre · 11:00 h", e2l: "Parroquia Santa María", e2a: "Calle Mayor 12",
   nota: "Acompáñanos a recordar juntos una vida llena de amor.",
   contacto: "Con cariño, la familia Méndez",
   photo: null
 };
-const STORE_KEY = "invitacion-memorial-v1";
+const STORE_KEY = "invitacion-memorial-v3";
 
 let S = Object.assign({}, DEFAULTS, load());
 let srcImg = null;
@@ -504,14 +564,52 @@ function croppedPhoto() {
 }
 
 /* ---------- Render ---------- */
-function eventHtml(t, d, l, a) {
+// Enlace de Google Maps: el que pegó el usuario o una búsqueda con lugar + dirección
+function mapsUrl(n) {
+  const m = (S[`e${n}m`] || "").trim();
+  if (/^https?:\/\//i.test(m)) return m;
+  const q = m || [S[`e${n}l`], S[`e${n}a`]].filter(Boolean).join(", ");
+  return q ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q) : "";
+}
+
+const qrCache = {};
+function qrImage(text) {
+  if (!text || typeof QRCode === "undefined") return "";
+  if (!qrCache[text]) {
+    const box = document.createElement("div");
+    new QRCode(box, { text, width: 240, height: 240, colorDark: "#1f2420", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    const c = box.querySelector("canvas");
+    qrCache[text] = c ? c.toDataURL("image/png") : "";
+  }
+  return qrCache[text];
+}
+
+function eventHtml(n) {
+  const [t, d, l, a] = ["t", "d", "l", "a"].map(k => S[`e${n}${k}`]);
   if (!t && !d && !l && !a) return "";
+  const qr = S.qr ? qrImage(mapsUrl(n)) : "";
   return `<div class="c-ev">
     ${t ? `<div class="c-evt">${esc(t)}</div>` : ""}
     ${d ? `<div class="c-evd">${esc(d)}</div>` : ""}
     ${l ? `<div class="c-evl">${esc(l)}</div>` : ""}
     ${a ? `<div class="c-eva">${esc(a)}</div>` : ""}
+    ${qr ? `<div class="c-qr"><img alt="" src="${qr}"><span>Cómo<br>llegar</span></div>` : ""}
   </div>`;
+}
+
+// Texto para acompañar la imagen: aquí los enlaces sí se pueden pulsar
+function shareMessage() {
+  const parts = [[S.script, S.sub, S.nombre].filter(Boolean).join(" ")];
+  [1, 2].forEach(n => {
+    if (n === 2 && !S.e2on) return;
+    const lines = [S[`e${n}t`] && S[`e${n}t`].toUpperCase(), S[`e${n}d`], [S[`e${n}l`], S[`e${n}a`]].filter(Boolean).join(", ")].filter(Boolean);
+    const url = mapsUrl(n);
+    if (url) lines.push("📍 Cómo llegar: " + url);
+    if (lines.length) parts.push(lines.join("\n"));
+  });
+  if (S.nota) parts.push(S.nota);
+  if (S.contacto) parts.push(S.contacto);
+  return parts.join("\n\n");
 }
 
 function render() {
@@ -519,7 +617,7 @@ function render() {
   card.style.setProperty("--ns", S.ns);
   decor.innerHTML = DECOR[S.theme]();
 
-  const evs = [eventHtml(S.e1t, S.e1d, S.e1l, S.e1a), S.e2on ? eventHtml(S.e2t, S.e2d, S.e2l, S.e2a) : ""].filter(Boolean);
+  const evs = [eventHtml(1), S.e2on ? eventHtml(2) : ""].filter(Boolean);
   const line = (cls, v) => v ? `<div class="${cls}">${esc(v)}</div>` : "";
 
   content.innerHTML = `
@@ -551,6 +649,8 @@ function syncControls() {
   document.querySelectorAll(".theme-btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === S.theme));
   document.querySelectorAll("#shapeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.shape === S.shape));
   $("#ev2box").hidden = !S.e2on;
+  $("#rSemBox").hidden = !S.rSem;
+  renderReminders();
 }
 
 function fillForm() {
@@ -563,7 +663,7 @@ function fillForm() {
 
 /* ---------- Eventos ---------- */
 document.querySelectorAll("[data-k]").forEach(el => {
-  el.addEventListener("input", () => {
+  el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
     const k = el.dataset.k;
     S[k] = el.type === "checkbox" ? el.checked : el.type === "range" ? +el.value : el.value;
     render(); save();
@@ -659,8 +759,145 @@ try {
 } catch (e) {}
 shareBtn.addEventListener("click", e => withBusy(e.currentTarget, "Preparando…", async () => {
   const blob = await makeBlob();
-  await navigator.share({ files: [new File([blob], fileName(), { type: "image/png" })], title: S.nombre });
+  await navigator.share({ files: [new File([blob], fileName(), { type: "image/png" })], title: S.nombre, text: shareMessage() });
 }));
+
+$("#copyBtn").addEventListener("click", async e => {
+  const btn = e.currentTarget, old = btn.textContent, text = shareMessage();
+  try { await navigator.clipboard.writeText(text); }
+  catch (err) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e2) {}
+    ta.remove();
+  }
+  btn.textContent = "¡Copiado! Pégalo junto a la imagen";
+  setTimeout(() => { btn.textContent = old; }, 2500);
+});
+
+/* ---------- Recordatorios de misas (calendario .ics) ---------- */
+const EDITOR_URL = "https://mariamjuice-star.github.io/invitacion-memorial/";
+const ORDINALES = ["", "primer", "segundo", "tercer", "cuarto", "quinto", "sexto", "séptimo", "octavo", "noveno", "décimo"];
+const pad = n => String(n).padStart(2, "0");
+
+function parseDate(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+  return m ? { y: +m[1], m: +m[2], d: +m[3] } : null;
+}
+function addDays(dt, n) {
+  const x = new Date(Date.UTC(dt.y, dt.m - 1, dt.d + n));
+  return { y: x.getUTCFullYear(), m: x.getUTCMonth() + 1, d: x.getUTCDate() };
+}
+// El 29 de febrero se recuerda el 28 en los años no bisiestos
+function anniversary(dt, k) {
+  const y = dt.y + k, leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  return { y, m: dt.m, d: dt.m === 2 && dt.d === 29 && !leap ? 28 : dt.d };
+}
+function defaultLugar() {
+  return S.e2on && (S.e2l || S.e2a) ? [S.e2l, S.e2a].filter(Boolean).join(", ") : [S.e1l, S.e1a].filter(Boolean).join(", ");
+}
+function massLugar() { return (S.rLugar || "").trim() || defaultLugar(); }
+function massHora() { return /^\d{2}:\d{2}$/.test(S.rHora || "") ? S.rHora : "19:00"; }
+
+function massList() {
+  const f = parseDate(S.rFall);
+  if (!f) return [];
+  const list = [];
+  if (S.rSem) list.push({ tipo: "Misa de la semana", date: parseDate(S.rSemFecha) || addDays(f, 7) });
+  for (let k = 1; k <= Math.min(10, +S.rAnios || 0); k++) {
+    list.push({ tipo: `Misa del ${ORDINALES[k]} aniversario`, date: anniversary(f, k) });
+  }
+  return list;
+}
+
+function fmtLong(dt) {
+  return new Date(Date.UTC(dt.y, dt.m - 1, dt.d, 12)).toLocaleDateString("es-ES",
+    { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+function stamp(dt, hhmm, plusMin = 0) {
+  const [h, mi] = hhmm.split(":").map(Number);
+  const x = new Date(Date.UTC(dt.y, dt.m - 1, dt.d, h, mi + plusMin));
+  return `${x.getUTCFullYear()}${pad(x.getUTCMonth() + 1)}${pad(x.getUTCDate())}T${pad(x.getUTCHours())}${pad(x.getUTCMinutes())}00`;
+}
+function massTexts(item) {
+  const lugar = massLugar();
+  const maps = lugar ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(lugar) : "";
+  const title = `${item.tipo} · ${S.nombre || "En su recuerdo"}`;
+  const details = [`Misa en recuerdo de ${S.nombre || "nuestro ser querido"}.`,
+    maps && `Cómo llegar: ${maps}`, `Prepara la invitación: ${EDITOR_URL}`].filter(Boolean).join("\n");
+  return { title, details, lugar };
+}
+function googleLink(item) {
+  const t = massTexts(item), h = massHora();
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    "&text=" + encodeURIComponent(t.title) +
+    "&dates=" + stamp(item.date, h) + "/" + stamp(item.date, h, 60) +
+    "&location=" + encodeURIComponent(t.lugar) +
+    "&details=" + encodeURIComponent(t.details);
+}
+
+function icsEsc(s) { return String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+// Las líneas de un .ics no deben pasar de 75 bytes
+function icsFold(line) {
+  const out = []; let cur = "", bytes = 0;
+  for (const ch of line) {
+    const b = new TextEncoder().encode(ch).length;
+    if (bytes + b > 73) { out.push(cur); cur = " "; bytes = 1; }
+    cur += ch; bytes += b;
+  }
+  out.push(cur);
+  return out.join("\r\n");
+}
+function buildIcs() {
+  const h = massHora(), now = new Date();
+  const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+  const uidBase = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Invitacion Memorial//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:" + icsEsc("Misas en recuerdo de " + (S.nombre || "nuestro ser querido"))];
+  massList().forEach((item, i) => {
+    const t = massTexts(item);
+    L.push("BEGIN:VEVENT", `UID:${uidBase}-${i}@invitacion-memorial`, "DTSTAMP:" + dtstamp,
+      "DTSTART:" + stamp(item.date, h), "DTEND:" + stamp(item.date, h, 60),
+      "SUMMARY:" + icsEsc(t.title), "DESCRIPTION:" + icsEsc(t.details));
+    if (t.lugar) L.push("LOCATION:" + icsEsc(t.lugar));
+    L.push("BEGIN:VALARM", "ACTION:DISPLAY", "TRIGGER:-P7D",
+      "DESCRIPTION:" + icsEsc(`Dentro de una semana: ${t.title}`), "END:VALARM", "END:VEVENT");
+  });
+  L.push("END:VCALENDAR");
+  return L.map(icsFold).join("\r\n") + "\r\n";
+}
+function icsFile() {
+  const slug = fileName().replace(/^invitacion-/, "").replace(/\.png$/, "");
+  return new File([buildIcs()], `misas-${slug}.ics`, { type: "text/calendar" });
+}
+
+function renderReminders() {
+  $("#rLugarInput").placeholder = defaultLugar() || "Parroquia y dirección";
+  const list = massList();
+  $("#rList").innerHTML = !parseDate(S.rFall)
+    ? `<div class="rempty">Indica la fecha del fallecimiento para calcular las misas.</div>`
+    : list.length
+      ? list.map(it => `<div class="ritem"><div><b>${esc(it.tipo)}</b><span>${esc(fmtLong(it.date))} · ${esc(massHora())} h</span></div>
+          <a href="${esc(googleLink(it))}" target="_blank" rel="noopener">+ Google</a></div>`).join("")
+      : `<div class="rempty">Elige la misa de la semana o algún aniversario.</div>`;
+  $("#icsBtn").disabled = !list.length;
+  $("#icsShareBtn").disabled = !list.length;
+}
+
+$("#icsBtn").addEventListener("click", () => {
+  const f = icsFile(), a = document.createElement("a");
+  a.href = URL.createObjectURL(f); a.download = f.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+const icsShareBtn = $("#icsShareBtn");
+try {
+  if (navigator.canShare && navigator.canShare({ files: [new File([""], "x.ics", { type: "text/calendar" })] })) icsShareBtn.hidden = false;
+} catch (e) {}
+icsShareBtn.addEventListener("click", async () => {
+  try { await navigator.share({ files: [icsFile()], title: "Misas en recuerdo de " + (S.nombre || "") }); }
+  catch (e) { if (e.name !== "AbortError") alert("No se pudo compartir. Usa «Descargar calendario»."); }
+});
 
 /* ---------- Inicio ---------- */
 (async function init() {
