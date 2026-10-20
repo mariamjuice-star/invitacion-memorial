@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invitación Memorial Editable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --panel: #ffffff;
+    --ink: #24231f;
+    --muted: #6d6a62;
+    --line: #e3dfd6;
+    --brand: #5d7a56;
+    --brand-ink: #ffffff;
+    --field: #faf9f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 Montserrat, system-ui, sans-serif;
+  }
+  header {
+    padding: 22px 16px 6px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  header h1 {
+    font: 600 30px/1.1 "Cormorant Garamond", serif;
+    margin: 0 0 4px;
+  }
+  header p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .app {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 28px;
+    align-items: start;
+  }
+  .preview-col { position: sticky; top: 16px; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .preview-col { position: static; order: -1; }
+  }
+
+  /* ---------- Panel del editor ---------- */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel h2 {
+    font: 600 12px/1 Montserrat, sans-serif;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  label { display: block; font-size: 12.5px; font-weight: 500; margin: 0 0 5px; }
+  .field { margin-bottom: 12px; }
+  input[type=text], textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 14px;
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--field);
+    color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 56px; }
+  input:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+  input[type=range] { width: 100%; accent-color: var(--brand); }
+
+  .themes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .theme-btn {
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: 500 11.5px Montserrat, sans-serif;
+    color: var(--ink);
+  }
+  .theme-btn span { display: block; height: 34px; border-radius: 6px; margin-bottom: 5px; }
+  .theme-btn[aria-pressed=true] { border-color: var(--brand); }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button {
+    border: 0; background: #fff; padding: 8px 14px; font: 500 13px Montserrat, sans-serif;
+    cursor: pointer; color: var(--ink);
+  }
+  .seg button[aria-pressed=true] { background: var(--brand); color: var(--brand-ink); }
+
+  .upload {
+    display: flex; align-items: center; gap: 12px;
+    border: 1.5px dashed var(--line); border-radius: 10px; padding: 12px;
+    cursor: pointer; background: var(--field);
+  }
+  .upload input { display: none; }
+  .upload b { font-weight: 600; }
+  .upload small { color: var(--muted); display: block; }
+
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin-bottom: 12px; }
+  .check input { width: 17px; height: 17px; accent-color: var(--brand); }
+  .event-box { border-left: 3px solid var(--line); padding-left: 12px; margin-bottom: 6px; }
+  .event-box[hidden] { display: none; }
+
+  .actions { display: grid; gap: 8px; margin-top: 14px; }
+  .btn {
+    border: 0; border-radius: 10px; padding: 13px 16px;
+    font: 600 14px Montserrat, sans-serif; cursor: pointer;
+    background: var(--brand); color: var(--brand-ink);
+  }
+  .btn.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .hint { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; }
+  .steps { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .steps li { margin-bottom: 4px; }
+
+  /* ---------- Vista previa ---------- */
+  .stage-box { width: 100%; max-width: 360px; margin: 0 auto; }
+  .stage { width: 360px; height: 640px; transform-origin: top left; }
+  .card {
+    --ts: 1;
+    --ns: 1;
+    position: relative;
+    width: 360px;
+    height: 640px;
+    overflow: hidden;
+    border-radius: 0;
+    background: var(--c-bg);
+    color: var(--c-ink);
+    box-shadow: 0 18px 50px rgba(30, 28, 22, .18);
+  }
+  .card .decor { position: absolute; inset: 0; pointer-events: none; }
+  .card .decor img { position: absolute; display: block; }
+  .card .frame { position: absolute; inset: 14px; border: 1px solid var(--c-accent); }
+  .card .frame.double { inset: 12px; border: 3px double var(--c-accent); }
+
+  .content {
+    position: absolute;
+    inset: 38px 30px 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: calc(7px * var(--ts));
+    overflow: hidden;
+  }
+  .c-script {
+    font: 400 calc(48px * var(--ts))/1 "Great Vibes", cursive;
+    color: var(--c-script);
+    margin-bottom: calc(-4px * var(--ts));
+  }
+  .c-sub {
+    font: 500 calc(9.5px * var(--ts))/1.2 Montserrat, sans-serif;
+    letter-spacing: .32em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    margin-bottom: calc(4px * var(--ts));
+  }
+  .c-photo {
+    width: calc(138px * var(--ts));
+    padding: calc(5px * var(--ts));
+    border: 1.5px solid var(--c-accent);
+    border-radius: 50%;
+    flex: none;
+  }
+  .c-photo.arch { width: calc(128px * var(--ts)); border-radius: 999px 999px 8px 8px; }
+  .c-photo img { display: block; width: 100%; height: auto; }
+  .c-name {
+    font: 600 calc(23px * var(--ns) * var(--ts))/1.15 "Cormorant Garamond", serif;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    margin-top: calc(6px * var(--ts));
+  }
+  .c-dates {
+    font: 500 calc(10px * var(--ts))/1.3 Montserrat, sans-serif;
+    letter-spacing: .12em;
+    color: var(--c-muted);
+  }
+  .c-verse {
+    font: italic 400 calc(14px * var(--ts))/1.3 "Cormorant Garamond", serif;
+    max-width: 260px;
+  }
+  .c-div {
+    width: 120px; height: 1px; background: var(--c-accent);
+    margin: calc(4px * var(--ts)) 0; position: relative; flex: none;
+  }
+  .c-div::after {
+    content: ""; position: absolute; left: 50%; top: -3px; width: 6px; height: 6px;
+    margin-left: -3px; background: var(--c-accent); transform: rotate(45deg);
+  }
+  .c-events { display: flex; gap: 14px; width: 100%; justify-content: center; }
+  .c-ev { flex: 1 1 0; max-width: 260px; }
+  .c-events.two .c-ev + .c-ev { border-left: 1px solid var(--c-line); padding-left: 14px; }
+  .c-evt {
+    font: 600 calc(9px * var(--ts))/1.2 Montserrat, sans-serif;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--c-accent-text);
+    margin-bottom: calc(4px * var(--ts));
+  }
+  .c-evd { font: 600 calc(13px * var(--ts))/1.25 "Cormorant Garamond", serif; }
+  .c-evl { font: 500 calc(12.5px * var(--ts))/1.25 "Cormorant Garamond", serif; }
+  .c-eva {
+    font: 400 calc(9.5px * var(--ts))/1.35 Montserrat, sans-serif;
+    color: var(--c-muted); margin-top: 2px;
+  }
+  .c-note { font: italic 400 calc(13px * var(--ts))/1.3 "Cormorant Garamond", serif; max-width: 270px; }
+  .c-contact {
+    font: 500 calc(9px * var(--ts))/1.3 Montserrat, sans-serif;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--c-muted);
+  }
+
+  /* Temas */
+  .card[data-theme=botanico] {
+    --c-bg: #fbfaf6; --c-ink: #2c3529; --c-muted: #6c7468; --c-accent: #7f9877;
+    --c-accent-text: #55704d; --c-script: #2c3529; --c-line: #d9dfd5;
+  }
+  .card[data-theme=sereno] {
+    --c-bg: #f5eee2; --c-ink: #47392a; --c-muted: #7e6c58; --c-accent: #b8955e;
+    --c-accent-text: #96743f; --c-script: #8c6b3a; --c-line: #e1d3bb;
+  }
+  .card[data-theme=noche] {
+    --c-bg: #1c2840; --c-ink: #f3eee3; --c-muted: #c3c0b6; --c-accent: #cfae67;
+    --c-accent-text: #dcbd78; --c-script: #e3c886; --c-line: #3b4766;
+  }
+  .card[data-theme=lavanda] {
+    --c-bg: #f4f1f7; --c-ink: #3a3249; --c-muted: #6f6680; --c-accent: #9d8bc0;
+    --c-accent-text: #7a65a3; --c-script: #5d4c80; --c-line: #ddd6e8;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Invitación Memorial Digital</h1>
+  <p>Plantilla editable para móvil · Celebración de vida, velorio o misa · Descárgala y envíala por WhatsApp</p>
+</header>
+
+<main class="app">
+  <section>
+    <div class="panel">
+      <h2>Cómo usarla</h2>
+      <ol class="steps">
+        <li>Elige un diseño y sube la foto de tu ser querido.</li>
+        <li>Escribe los datos: la vista previa se actualiza al momento.</li>
+        <li>Pulsa <b>Descargar imagen</b> (1080 × 1920 px) y compártela por WhatsApp, SMS, email o redes.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h2>Diseño</h2>
+      <div class="themes" id="themes">
+        <button class="theme-btn" data-theme="botanico"><span style="background:linear-gradient(135deg,#fbfaf6 55%,#7f9877 55%)"></span>Botánico</button>
+        <button class="theme-btn" data-theme="sereno"><span style="background:linear-gradient(135deg,#f5eee2 55%,#b8955e 55%)"></span>Sereno</button>
+        <button class="theme-btn" data-theme="noche"><span style="background:linear-gradient(135deg,#1c2840 55%,#cfae67 55%)"></span>Noche</button>
+        <button class="theme-btn" data-theme="lavanda"><span style="background:linear-gradient(135deg,#f4f1f7 55%,#9d8bc0 55%)"></span>Lavanda</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Fotografía</h2>
+      <label class="upload">
+        <input type="file" id="photoInput" accept="image/*">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+        <div><b>Subir foto</b><small>JPG o PNG desde tu móvil u ordenador</small></div>
+      </label>
+      <div class="field" style="margin-top:14px">
+        <label>Forma</label>
+        <div class="seg" id="shapeSeg">
+          <button data-shape="circle">Círculo</button>
+          <button data-shape="arch">Arco</button>
+        </div>
+      </div>
+      <div class="field"><label>Zoom</label><input type="range" data-k="zoom" min="1" max="3" step="0.02"></div>
+      <div class="row2">
+        <div class="field"><label>Mover horizontal</label><input type="range" data-k="px" min="-1" max="1" step="0.02"></div>
+        <div class="field"><label>Mover vertical</label><input type="range" data-k="py" min="-1" max="1" step="0.02"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Texto principal</h2>
+      <div class="row2">
+        <div class="field"><label>Título caligráfico</label><input type="text" data-k="script"></div>
+        <div class="field"><label>Subtítulo</label><input type="text" data-k="sub"></div>
+      </div>
+      <div class="field"><label>Nombre completo</label><input type="text" data-k="nombre"></div>
+      <div class="field"><label>Fechas</label><input type="text" data-k="fechas"></div>
+      <div class="field"><label>Frase o verso</label><textarea data-k="verso"></textarea></div>
+    </div>
+
+    <div class="panel">
+      <h2>Ceremonias</h2>
+      <div class="event-box">
+        <div class="field"><label>Tipo de acto</label><input type="text" data-k="e1t" placeholder="Velorio, Misa, Ceremonia…"></div>
+        <div class="field"><label>Día y hora</label><input type="text" data-k="e1d"></div>
+        <div class="field"><label>Lugar</label><input type="text" data-k="e1l"></div>
+        <div class="field"><label>Dirección</label><input type="text" data-k="e1a"></div>
+      </div>
+      <label class="check"><input type="checkbox" data-k="e2on"> Añadir un segundo acto</label>
+      <div class="event-box" id="ev2box">
+        <div class="field"><label>Tipo de acto</label><input type="text" data-k="e2t"></div>
+        <div class="field"><label>Día y hora</label><input type="text" data-k="e2d"></div>
+        <div class="field"><label>Lugar</label><input type="text" data-k="e2l"></div>
+        <div class="field"><label>Dirección</label><input type="text" data-k="e2a"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Cierre</h2>
+      <div class="field"><label>Mensaje final</label><textarea data-k="nota"></textarea></div>
+      <div class="field"><label>Firma o contacto</label><input type="text" data-k="contacto"></div>
+      <div class="row2">
+        <div class="field"><label>Tamaño del nombre</label><input type="range" data-k="ns" min="0.7" max="1.4" step="0.01"></div>
+        <div class="field"><label>Tamaño del texto</label><input type="range" data-k="ts" min="0.7" max="1.2" step="0.01"></div>
+      </div>
+      <p class="hint" style="text-align:left;margin:0">Si el texto no cabe, se reduce solo para que nada quede cortado.</p>
+    </div>
+  </section>
+
+  <aside class="preview-col">
+    <div class="stage-box" id="stageBox">
+      <div class="stage" id="stage">
+        <div class="card" id="card">
+          <div class="decor" id="decor"></div>
+          <div class="content" id="content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="downloadBtn">Descargar imagen</button>
+      <button class="btn secondary" id="shareBtn" hidden>Compartir</button>
+      <button class="btn secondary" id="resetBtn">Restablecer ejemplo</button>
+    </div>
+    <p class="hint">Imagen vertical 1080 × 1920 px, ideal para la pantalla del móvil.</p>
+  </aside>
+</main>
+
+<script>
+const DEFAULTS = {
+  theme: "botanico", shape: "circle", zoom: 1, px: 0, py: 0, ns: 1, ts: 1,
+  script: "Celebrando",
+  sub: "la vida de",
+  nombre: "Carlos Méndez Ruiz",
+  fechas: "12 · 03 · 1958  —  04 · 10 · 2026",
+  verso: "Lo que amamos con el corazón nunca se pierde.",
+  e1t: "Velorio", e1d: "Viernes 23 de octubre · 18:00 h", e1l: "Funeraria San José", e1a: "Av. de la Paz 145",
+  e2on: true,
+  e2t: "Misa", e2d: "Sábado 24 de octubre · 11:00 h", e2l: "Parroquia Santa María", e2a: "Calle Mayor 12",
+  nota: "Acompáñanos a recordar juntos una vida llena de amor.",
+  contacto: "Con cariño, la familia Méndez",
+  photo: null
+};
+const STORE_KEY = "invitacion-memorial-v1";
+
+let S = Object.assign({}, DEFAULTS, load());
+let srcImg = null;
+
+const $ = (s, r = document) => r.querySelector(s);
+const card = $("#card"), content = $("#content"), decor = $("#decor");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const svgUri = s => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+  catch (e) {
+    // La foto puede superar el espacio disponible: guardamos el resto
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign({}, S, { photo: null }))); } catch (e2) {}
+  }
+}
+
+/* ---------- Ilustraciones ---------- */
+function branch(c1, c2, stem) {
+  const pts = [];
+  for (let i = 0; i <= 9; i++) pts.push([100 + Math.sin(i * .7) * 8, 305 - i * 30]);
+  let leaves = "";
+  pts.slice(1).forEach(([x, y], i) => {
+    const s = i % 2 ? 1 : -1, cx = x + s * 15, cy = y + 4;
+    leaves += `<ellipse cx="${cx}" cy="${cy}" rx="9" ry="24" fill="${i % 3 ? c1 : c2}" transform="rotate(${s * 35} ${cx} ${cy})"/>`;
+  });
+  const [tx, ty] = pts[pts.length - 1];
+  leaves += `<ellipse cx="${tx}" cy="${ty - 14}" rx="8" ry="20" fill="${c1}"/>`;
+  const d = "M" + pts.map(p => p.join(" ")).join(" L");
+  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 320"><path d="${d}" stroke="${stem}" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>${leaves}</svg>`);
+}
+function lavender(stem, f1, f2) {
+  let s = "";
+  [[-14, 0], [0, 1], [14, 2]].forEach(([rot, k]) => {
+    let g = `<path d="M100 318 Q 97 200 100 ${50 + k * 12}" stroke="${stem}" stroke-width="2.2" fill="none"/>`;
+    g += `<ellipse cx="90" cy="270" rx="4" ry="26" fill="${stem}" transform="rotate(-22 90 270)"/>`;
+    for (let i = 0; i < 11; i++) {
+      const y = 50 + k * 12 + i * 12, r = 3.4 + i * .22;
+      g += `<ellipse cx="94" cy="${y}" rx="${r}" ry="${r * 1.7}" fill="${i % 2 ? f1 : f2}" transform="rotate(-28 94 ${y})"/>`;
+      g += `<ellipse cx="106" cy="${y + 5}" rx="${r}" ry="${r * 1.7}" fill="${i % 2 ? f2 : f1}" transform="rotate(28 106 ${y + 5})"/>`;
+    }
+    s += `<g transform="rotate(${rot} 100 318)">${g}</g>`;
+  });
+  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 320">${s}</svg>`);
+}
+function stars(color) {
+  let seed = 7, s = "";
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * 360, y = rnd() * 640, r = rnd() * 1.1 + .3;
+    s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" fill="${color}" opacity="${(.35 + rnd() * .5).toFixed(2)}"/>`;
+  }
+  [[46, 70, 7], [314, 112, 5], [300, 560, 6], [60, 590, 4]].forEach(([x, y, r]) => {
+    s += `<path d="M${x} ${y - r * 2}Q${x} ${y} ${x + r * 2} ${y}Q${x} ${y} ${x} ${y + r * 2}Q${x} ${y} ${x - r * 2} ${y}Q${x} ${y} ${x} ${y - r * 2}Z" fill="${color}"/>`;
+  });
+  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640">${s}</svg>`);
+}
+
+// html2canvas no pinta bien los SVG: los convertimos a PNG al iniciar
+const ART = {};
+async function rasterize(uri, w, h) {
+  const img = await loadImage(uri);
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  c.getContext("2d").drawImage(img, 0, 0, w, h);
+  return c.toDataURL("image/png");
+}
+async function prepareArt() {
+  const jobs = {
+    green: [branch("#8fa886", "#5f7a57", "#5f7a57"), 400, 640],
+    gold: [branch("#c9a873", "#a8854d", "#a8854d"), 400, 640],
+    lavender: [lavender("#8c9a7c", "#a594c9", "#8a76b5"), 400, 640],
+    stars: [stars("#e3c886"), 1080, 1920]
+  };
+  await Promise.all(Object.entries(jobs).map(async ([k, [u, w, h]]) => { ART[k] = await rasterize(u, w, h); }));
+}
+
+const DECOR = {
+  botanico: () => {
+    const b = ART.green;
+    return `<img src="${b}" style="width:100px;left:-44px;bottom:-46px;transform:rotate(34deg)">
+            <img src="${b}" style="width:72px;left:-46px;bottom:60px;transform:rotate(70deg);opacity:.7">
+            <img src="${b}" style="width:100px;right:-44px;top:-46px;transform:rotate(214deg)">
+            <img src="${b}" style="width:72px;right:-46px;top:60px;transform:rotate(250deg);opacity:.7">`;
+  },
+  sereno: () => {
+    const b = ART.gold;
+    return `<div class="frame double"></div>
+            <img src="${b}" style="width:30px;left:142px;top:12px;transform:rotate(-72deg)">
+            <img src="${b}" style="width:30px;left:188px;top:12px;transform:scaleX(-1) rotate(-72deg)">`;
+  },
+  noche: () => `<img src="${ART.stars}" style="left:0;top:0;width:360px;height:640px"><div class="frame"></div>`,
+  lavanda: () => {
+    const l = ART.lavender;
+    return `<img src="${l}" style="width:104px;left:-30px;bottom:-24px;transform:rotate(18deg)">
+            <img src="${l}" style="width:104px;right:-30px;bottom:-24px;transform:scaleX(-1) rotate(18deg)">`;
+  }
+};
+
+/* ---------- Foto ---------- */
+const PLACEHOLDER = svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect width="400" height="400" fill="#d8d4cb"/><circle cx="200" cy="160" r="72" fill="#bdb7ab"/><path d="M60 400c10-90 70-140 140-140s130 50 140 140z" fill="#bdb7ab"/></svg>`);
+
+function loadImage(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+
+function croppedPhoto() {
+  const arch = S.shape === "arch";
+  const W = 600, H = arch ? 780 : 600;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const ctx = c.getContext("2d");
+  ctx.beginPath();
+  if (arch) {
+    const r = W / 2, br = 28;
+    ctx.moveTo(0, r);
+    ctx.arc(r, r, r, Math.PI, 0);
+    ctx.lineTo(W, H - br); ctx.quadraticCurveTo(W, H, W - br, H);
+    ctx.lineTo(br, H); ctx.quadraticCurveTo(0, H, 0, H - br);
+    ctx.closePath();
+  } else {
+    ctx.arc(W / 2, H / 2, W / 2, 0, Math.PI * 2);
+  }
+  ctx.clip();
+  if (srcImg) {
+    const sc = Math.max(W / srcImg.width, H / srcImg.height) * S.zoom;
+    const dw = srcImg.width * sc, dh = srcImg.height * sc;
+    const dx = (W - dw) / 2 + S.px * (dw - W) / 2;
+    const dy = (H - dh) / 2 + S.py * (dh - H) / 2;
+    ctx.drawImage(srcImg, dx, dy, dw, dh);
+  }
+  return c.toDataURL("image/png");
+}
+
+/* ---------- Render ---------- */
+function eventHtml(t, d, l, a) {
+  if (!t && !d && !l && !a) return "";
+  return `<div class="c-ev">
+    ${t ? `<div class="c-evt">${esc(t)}</div>` : ""}
+    ${d ? `<div class="c-evd">${esc(d)}</div>` : ""}
+    ${l ? `<div class="c-evl">${esc(l)}</div>` : ""}
+    ${a ? `<div class="c-eva">${esc(a)}</div>` : ""}
+  </div>`;
+}
+
+function render() {
+  card.dataset.theme = S.theme;
+  card.style.setProperty("--ns", S.ns);
+  decor.innerHTML = DECOR[S.theme]();
+
+  const evs = [eventHtml(S.e1t, S.e1d, S.e1l, S.e1a), S.e2on ? eventHtml(S.e2t, S.e2d, S.e2l, S.e2a) : ""].filter(Boolean);
+  const line = (cls, v) => v ? `<div class="${cls}">${esc(v)}</div>` : "";
+
+  content.innerHTML = `
+    ${line("c-script", S.script)}
+    ${line("c-sub", S.sub)}
+    <div class="c-photo ${S.shape === "arch" ? "arch" : ""}"><img alt="" src="${croppedPhoto()}"></div>
+    ${line("c-name", S.nombre)}
+    ${line("c-dates", S.fechas)}
+    ${line("c-verse", S.verso)}
+    ${evs.length ? `<div class="c-div"></div><div class="c-events ${evs.length > 1 ? "two" : ""}">${evs.join("")}</div>` : ""}
+    ${line("c-note", S.nota)}
+    ${line("c-contact", S.contacto)}`;
+
+  fitText();
+  syncControls();
+}
+
+// Reduce el tamaño si el contenido no cabe en la tarjeta
+function fitText() {
+  let ts = +S.ts;
+  card.style.setProperty("--ts", ts);
+  while (content.scrollHeight > content.clientHeight + 1 && ts > 0.55) {
+    ts -= 0.02;
+    card.style.setProperty("--ts", ts.toFixed(2));
+  }
+}
+
+function syncControls() {
+  document.querySelectorAll(".theme-btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === S.theme));
+  document.querySelectorAll("#shapeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.shape === S.shape));
+  $("#ev2box").hidden = !S.e2on;
+}
+
+function fillForm() {
+  document.querySelectorAll("[data-k]").forEach(el => {
+    const k = el.dataset.k;
+    if (el.type === "checkbox") el.checked = !!S[k];
+    else el.value = S[k] ?? "";
+  });
+}
+
+/* ---------- Eventos ---------- */
+document.querySelectorAll("[data-k]").forEach(el => {
+  el.addEventListener("input", () => {
+    const k = el.dataset.k;
+    S[k] = el.type === "checkbox" ? el.checked : el.type === "range" ? +el.value : el.value;
+    render(); save();
+  });
+});
+$("#themes").addEventListener("click", e => {
+  const b = e.target.closest(".theme-btn"); if (!b) return;
+  S.theme = b.dataset.theme; render(); save();
+});
+$("#shapeSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.shape = b.dataset.shape; render(); save();
+});
+
+$("#photoInput").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f);
+  try {
+    const img = await loadImage(url);
+    // Reducimos la foto para que el archivo sea ligero
+    const max = 1400, sc = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    S.photo = c.toDataURL("image/jpeg", 0.9);
+    S.zoom = 1; S.px = 0; S.py = 0;
+    srcImg = await loadImage(S.photo);
+    fillForm(); render(); save();
+  } catch (err) {
+    alert("No se pudo leer esa imagen. Prueba con otra foto en JPG o PNG.");
+  } finally {
+    URL.revokeObjectURL(url);
+    e.target.value = "";
+  }
+});
+
+$("#resetBtn").addEventListener("click", async () => {
+  if (!confirm("¿Volver al ejemplo? Se perderán los cambios.")) return;
+  S = Object.assign({}, DEFAULTS);
+  srcImg = await loadImage(PLACEHOLDER);
+  fillForm(); render(); save();
+});
+
+/* ---------- Exportar ---------- */
+const stage = $("#stage"), stageBox = $("#stageBox");
+function fitStage() {
+  const s = Math.min(1, stageBox.clientWidth / 360);
+  stage.style.transform = s < 1 ? `scale(${s})` : "";
+  stageBox.style.height = 640 * s + "px";
+}
+window.addEventListener("resize", fitStage);
+
+function fileName() {
+  const slug = (S.nombre || "invitacion").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `invitacion-${slug || "memorial"}.png`;
+}
+
+async function makeBlob() {
+  await document.fonts.ready;
+  await Promise.all([...card.querySelectorAll("img")].map(i => i.complete ? null :
+    new Promise(r => { i.onload = i.onerror = r; setTimeout(r, 3000); })));
+  const prev = stage.style.transform;
+  stage.style.transform = "";
+  try {
+    const canvas = await html2canvas(card, { scale: 3, backgroundColor: null, logging: false });
+    return await new Promise(r => canvas.toBlob(r, "image/png"));
+  } finally {
+    stage.style.transform = prev;
+  }
+}
+
+async function withBusy(btn, label, fn) {
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = label;
+  try { await fn(); }
+  catch (e) { if (e && e.name !== "AbortError") alert("No se pudo generar la imagen. Inténtalo de nuevo."); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+
+$("#downloadBtn").addEventListener("click", e => withBusy(e.currentTarget, "Generando…", async () => {
+  const blob = await makeBlob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName();
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}));
+
+const shareBtn = $("#shareBtn");
+try {
+  if (navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] })) shareBtn.hidden = false;
+} catch (e) {}
+shareBtn.addEventListener("click", e => withBusy(e.currentTarget, "Preparando…", async () => {
+  const blob = await makeBlob();
+  await navigator.share({ files: [new File([blob], fileName(), { type: "image/png" })], title: S.nombre });
+}));
+
+/* ---------- Inicio ---------- */
+(async function init() {
+  await prepareArt();
+  try { srcImg = await loadImage(S.photo || PLACEHOLDER); }
+  catch (e) { S.photo = null; srcImg = await loadImage(PLACEHOLDER); }
+  fillForm();
+  fitStage();
+  render();
+  document.fonts.ready.then(fitText);
+})();
+</script>
+</body>
+</html>
